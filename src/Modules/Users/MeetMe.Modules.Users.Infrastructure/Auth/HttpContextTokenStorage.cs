@@ -13,10 +13,10 @@ public class HttpContextTokenStorage : ITokenStorage
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public void Set(JwtDTO jwt)
+    public void Set(JwtDto jwt)
         => _httpContextAccessor.HttpContext?.Items.TryAdd(TokenKey, jwt);
 
-    public JwtDTO Get()
+    public JwtDto Get()
     {
         if (_httpContextAccessor.HttpContext is null)
         {
@@ -25,7 +25,7 @@ public class HttpContextTokenStorage : ITokenStorage
 
         if (_httpContextAccessor.HttpContext.Items.TryGetValue(TokenKey, out var jwt))
         {
-            return jwt as JwtDTO;
+            return jwt as JwtDto;
         }
 
         return null;

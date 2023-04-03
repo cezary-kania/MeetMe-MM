@@ -4,6 +4,6 @@ namespace MeetMe.Modules.Users.Application.Security;
 
 public interface ITokenStorage
 {
-    void Set(JwtDTO jwt);
-    JwtDTO Get();
+    void Set(JwtDto jwt);
+    JwtDto Get();
 }

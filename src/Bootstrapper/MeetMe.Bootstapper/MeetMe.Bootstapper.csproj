@@ -1,13 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Modules\Profiles\MeetMe.Modules.Profiles.Api\MeetMe.Modules.Profiles.Api.csproj" />
+      <ProjectReference Include="..\..\Modules\Users\MeetMe.Modules.Users.Api\MeetMe.Modules.Users.Api.csproj" />
     </ItemGroup>
 
 </Project>

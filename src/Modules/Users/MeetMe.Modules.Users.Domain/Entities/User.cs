@@ -8,10 +8,6 @@ public sealed class User
     public Email Email { get; private set; }
     public PasswordHash PasswordHash { get; private set; }
 
-    private User()
-    {
-    }
-
     public User(UserId id, Email email, PasswordHash passwordHash)
     {
         Id = id;
