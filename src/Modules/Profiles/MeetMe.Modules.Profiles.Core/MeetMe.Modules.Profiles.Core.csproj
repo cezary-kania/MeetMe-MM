@@ -12,6 +12,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\..\Shared\MeetMe.Shared\MeetMe.Shared.csproj" />
+      <ProjectReference Include="..\MeetMe.Modules.Profiles.Shared\MeetMe.Modules.Profiles.Shared.csproj" />
     </ItemGroup>
 
 </Project>

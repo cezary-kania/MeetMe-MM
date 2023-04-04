@@ -3,6 +3,8 @@ using MeetMe.Modules.Users.Application.Queries;
 using MeetMe.Modules.Users.Application.Security;
 using MeetMe.Modules.Users.Infrastructure;
 using MeetMe.Shared.Abstractions.Dispatchers;
+using MeetMe.Shared.Abstractions.Identity;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MeetMe.Modules.Users.Api;
 
@@ -22,23 +24,32 @@ public static class Extensions
     
     public static WebApplication ExposeUsersApi(this WebApplication app)
     {
-        app.MapGet("api/users/me", async (HttpContext context, IDispatcher dispatcher) =>
+        app.MapGet("api/users/me", async (
+            [FromServices] ICurrentUserService currentUserService, 
+            [FromServices] IDispatcher dispatcher) =>
         {
-            var userDto = await dispatcher.QueryAsync(new GetUser {UserId = Guid.Parse(context.User.Identity.Name)});
+            var userId = currentUserService.UserId;
+            if (userId is null)
+            {
+                return Results.Unauthorized();
+            }
+            var userDto = await dispatcher.QueryAsync(new GetUser {UserId = Guid.Parse(userId)});
             return Results.Ok(userDto);
-        }).RequireAuthorization().WithName(MeRoute);
+        })
+            .RequireAuthorization()
+            .WithName(MeRoute);
 
         app.MapPost("api/users/sign-in", async (
             SignIn command, 
-            IDispatcher dispatcher, 
-            ITokenStorage tokenStorage) =>
+            [FromServices] IDispatcher dispatcher, 
+            [FromServices] ITokenStorage tokenStorage) =>
         {
             await dispatcher.SendAsync(command);
             var jwt = tokenStorage.Get();
             return Results.Ok(jwt);
         });
         
-        app.MapPost("api/users/sign-up", async (SignUp command, IDispatcher dispatcher) =>
+        app.MapPost("api/users/sign-up", async (SignUp command, [FromServices] IDispatcher dispatcher) =>
         {
             command = command with {UserId = Guid.NewGuid()};
             await dispatcher.SendAsync(command);

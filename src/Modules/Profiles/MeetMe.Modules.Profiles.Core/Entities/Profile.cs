@@ -6,9 +6,10 @@ namespace MeetMe.Modules.Profiles.Core.Entities;
 internal sealed class Profile
 {
     public Guid OwnerId { get; private set; } 
-    public string Name { get; private set; }
-    public uint Age { get; private set; }
-    public Gender Gender { get; private set; }
+    public string? Name { get; private set; }
+    public uint? Age { get; private set; }
+    public Gender? Gender { get; private set; }
+    public Boolean IsActive { get; private set; } = false;
     public List<Interest> Interests { get; private set; } = new List<Interest>();
     public List<ProfileImage> Images { get; private set; } = new List<ProfileImage>();
 
@@ -30,13 +31,19 @@ internal sealed class Profile
         Interests.AddRange(interests);
     }
     
-    public void AddImage(ProfileImage image)
+    public void AddImages(List<ProfileImage> images)
     {
-        if (Images.Count >= 5)
+        if (Images.Count + images.Count >= 5)
         {
             throw new ToManyImagesException();
         }
-        Images.Add(image);
+
+        uint displayOderCounter = (uint) Images.Count;
+        foreach (ProfileImage profileImage in images)
+        {
+            profileImage.DisplayOrder = ++displayOderCounter;
+        }
+        Images.AddRange(images);
     }
     
     public void RemoveImage(Guid imageId)
@@ -59,5 +66,19 @@ internal sealed class Profile
     public void UpdateGender(Gender gender)
     {
         Gender = gender;
+    }
+
+    public void UpdateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 100)
+        {
+            throw new InvalidProfileNameException();
+        }
+        Name = name;
+    }
+    
+    public void Activate()
+    {
+        IsActive = true;
     }
 }

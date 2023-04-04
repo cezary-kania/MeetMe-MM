@@ -23,4 +23,14 @@ internal static class Extensions
             Name = interest.Name,
         };
     }
+    internal static ProfileImageDto AsDto(this ProfileImage profileImage)
+    {
+        return new ProfileImageDto
+        {
+            Id = profileImage.Id,
+            ProfileId = profileImage.ProfileId,
+            DisplayOrder = profileImage.DisplayOrder ?? default(uint),
+            BinaryData = profileImage.BinaryData,
+        };
+    }
 }

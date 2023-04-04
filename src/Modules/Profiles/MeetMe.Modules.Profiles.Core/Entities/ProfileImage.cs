@@ -4,18 +4,17 @@ internal sealed class ProfileImage
 {
     public Guid Id { get; private set; }
     public Guid ProfileId { get; private set; }
-    public uint DisplayOrder { get; private set; }
+    public uint? DisplayOrder { get; set; }
     public byte[] BinaryData { get; private set; }
 
     private ProfileImage()
     {
     }
 
-    public ProfileImage(Guid id, Guid profileId, uint displayOrder, byte[] binaryData)
+    public ProfileImage(Guid id, Guid profileId, byte[] binaryData)
     {
         Id = id;
         ProfileId = profileId;
-        DisplayOrder = displayOrder;
         BinaryData = binaryData;
     }
 }

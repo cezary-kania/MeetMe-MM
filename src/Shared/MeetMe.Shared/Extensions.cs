@@ -1,10 +1,15 @@
-﻿using MeetMe.Shared.Abstractions.Services;
+﻿using MeetMe.Shared.Abstractions.Dispatchers;
+using MeetMe.Shared.Abstractions.Identity;
+using MeetMe.Shared.Abstractions.Services;
 using MeetMe.Shared.Auth;
 using MeetMe.Shared.Commands;
 using MeetMe.Shared.Database;
+using MeetMe.Shared.Dispatchers;
 using MeetMe.Shared.Events;
+using MeetMe.Shared.Identity;
 using MeetMe.Shared.Messaging;
 using MeetMe.Shared.Queries;
+using MeetMe.Shared.Swagger;
 using MeetMe.Shared.Time;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +28,10 @@ public static class Extensions
         services.AddPostgres(configuration);
         services.AddAuth(configuration);
         services.AddSingleton<IClock, Clock>();
+        services.AddSingleton<IDispatcher, InMemoryDispatcher>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddSwagger();
         return services;
     }
 

@@ -8,9 +8,8 @@ public static class Extensions
 {
     public static IServiceCollection AddQueries(this IServiceCollection services)
     {
-        var assembly = Assembly.GetCallingAssembly();
         services.AddSingleton<IQueryDispatcher, QueryDispatcher>();
-        services.Scan(s => s.FromAssemblies(assembly)
+        services.Scan(s => s.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
             .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)))
             .AsImplementedInterfaces()
             .WithScopedLifetime());
