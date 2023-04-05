@@ -16,11 +16,11 @@ public class UserCreatedHandler : IEventHandler<UserCreated>
 
     public async Task HandleAsync(UserCreated @event, CancellationToken cancellationToken = default)
     {
-        var ownerId = @event.UserId;
-        if (await _profileService.GetAsync(ownerId) is not null)
+        var profileId = @event.UserId;
+        if (await _profileService.ExistsAsync(profileId))
         {
-            throw new ProfileAlreadyExistException(ownerId);
+            throw new ProfileAlreadyExistException(profileId);
         }
-        await _profileService.CreateProfileAsync(ownerId);
+        await _profileService.CreateProfileAsync(profileId);
     }
 }

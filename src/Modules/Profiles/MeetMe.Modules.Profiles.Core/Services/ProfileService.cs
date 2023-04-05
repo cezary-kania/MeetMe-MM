@@ -56,7 +56,14 @@ internal sealed class ProfileService : IProfileService
         var profile = await GetProfileOrThrowNotExist(ownerId);
         return profile.AsDto();
     }
-    
+
+    public async Task<bool> ExistsAsync(Guid profileId)
+    {
+        var profile = await _dbContext.Profiles
+            .FirstOrDefaultAsync(x => x.OwnerId == profileId);
+        return profile is not null;
+    }
+
     public async Task<IEnumerable<ProfileImageDto>> GetImagesAsync(Guid ownerId)
     {
         var profile = await GetProfileOrThrowNotExist(ownerId);
@@ -66,19 +73,29 @@ internal sealed class ProfileService : IProfileService
         return images.Select(x => x.AsDto());
     }
     
-    public async Task AddImageAsync(AddImagesDto addImageDto)
+    public async Task AddImageAsync(Guid profileId, IEnumerable<byte[]> newImages)
     {
-        var profile = await GetProfileOrThrowNotExist(addImageDto.ProfileId);
-        var imagesToAdd = addImageDto.Images
-            .Select(x => new ProfileImage(Guid.NewGuid(), addImageDto.ProfileId, x.BinaryData))
+        var profile = await GetProfileOrThrowNotExist(profileId);
+        var imagesToAdd = newImages
+            .Select(x => new ProfileImage(Guid.NewGuid(), profileId, x))
             .ToList();
         profile.AddImages(imagesToAdd);
+        _dbContext.Update(profile);
+        await _dbContext.SaveChangesAsync();
     }
     
-    public async Task UpdateInterestsAsync(UpdateProfileInterestsDto updateInterestsDto)
+    public async Task RemoveImageAsync(Guid profileId, Guid imageId)
     {
-        var profile = await GetProfileOrThrowNotExist(updateInterestsDto.OwnerId);
-        var interests = updateInterestsDto.Interests
+        var profile = await GetProfileOrThrowNotExist(profileId);
+        profile.RemoveImage(imageId);
+        _dbContext.Update(profile);
+        await _dbContext.SaveChangesAsync();
+    }
+    
+    public async Task UpdateInterestsAsync(Guid profileId, IEnumerable<InterestDto> interestDtos)
+    {
+        var profile = await GetProfileOrThrowNotExist(profileId);
+        var interests = interestDtos
             .Select(x => new Interest(x.Id, x.Name))
             .ToList();
         profile.AddInterests(interests);
@@ -92,10 +109,6 @@ internal sealed class ProfileService : IProfileService
             .Include(x => x.Interests)
             .Include(x => x.Images)
             .FirstOrDefaultAsync(x => x.OwnerId == profileId);
-        if (profile is null)
-        {
-            throw new ProfileDoesNotExistException(profileId);
-        }
-        return profile;
+        return profile ?? throw new ProfileDoesNotExistException(profileId);
     }
 }
