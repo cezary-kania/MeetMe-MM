@@ -6,7 +6,7 @@ namespace MeetMe.Shared.Database;
 
 public static class Extensions
 {
-    private const string SectionName = "postgres";
+    private const string SectionName = "Postgres";
     
     internal static IServiceCollection AddPostgres(this IServiceCollection services, IConfiguration configuration)
     {

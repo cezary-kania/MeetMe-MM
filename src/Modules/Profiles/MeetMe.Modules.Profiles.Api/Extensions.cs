@@ -57,20 +57,73 @@ public static class Extensions
         ).RequireAuthorization();
         
         app.MapPatch("api/profiles",
-            async (
-                [FromBody] ProfileUpdateDto updateDto,
-                [FromServices] ICurrentUserService currentUserService,
-                [FromServices] IProfileService profileService
-                ) =>
+        async (
+            [FromBody] ProfileUpdateDto updateDto,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IProfileService profileService
+            ) =>
+        {
+            if (Guid.TryParse(currentUserService.UserId, out var profileId))
             {
-                if (Guid.TryParse(currentUserService.UserId, out var profileId))
-                {
-                    await profileService.UpdateAsync(profileId, updateDto);
-                    return Results.NoContent();
-                }
+                await profileService.UpdateAsync(profileId, updateDto);
+                return Results.NoContent();
+            }
+            return Results.BadRequest();
+        }).RequireAuthorization();
+        
+        app.MapGet("api/profiles/{profileId:guid}/images",
+        async (Guid profileId, IProfileService profileService) 
+            => await profileService.GetImagesAsync(profileId)
+            ).RequireAuthorization();
+        
+        app.MapPost("api/profiles/images",
+        async (
+            [FromForm] List<IFormFile> images,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IProfileService profileService) =>
+        {
+            if (!Guid.TryParse(currentUserService.UserId, out var profileId) || images.Count is > 5 or < 1)
+            {
                 return Results.BadRequest();
             }
-        ).RequireAuthorization();
+            var processedImages = await Task.WhenAll(
+                images.Select(async x =>
+            {
+                using var memoryStream = new MemoryStream();
+                await x.CopyToAsync(memoryStream);
+                return memoryStream.ToArray();
+            }));
+            await profileService.AddImageAsync(profileId, processedImages);
+            return Results.NoContent();
+        }).RequireAuthorization();
+
+        app.MapDelete("api/profiles/images/{imageId:guid}",
+        async (
+            [FromRoute] Guid imageId,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IProfileService profileService) =>
+        {
+            if(!Guid.TryParse(currentUserService.UserId, out var profileId))
+            {
+                return Results.BadRequest();
+            }
+            await profileService.RemoveImageAsync(profileId, imageId);
+            return Results.NoContent();
+        }).RequireAuthorization();
+        
+        app.MapPut("api/profiles/interests",
+        async (
+            [FromBody] IEnumerable<InterestDto> interestDtos,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IProfileService profileService) =>
+        {
+            if(!Guid.TryParse(currentUserService.UserId, out var profileId))
+            {
+                return Results.BadRequest();
+            }
+            await profileService.UpdateInterestsAsync(profileId, interestDtos);
+            return Results.NoContent();
+        }).RequireAuthorization();
         
         return app;
     }

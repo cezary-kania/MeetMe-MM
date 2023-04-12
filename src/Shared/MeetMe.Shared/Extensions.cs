@@ -2,6 +2,7 @@
 using MeetMe.Shared.Abstractions.Identity;
 using MeetMe.Shared.Abstractions.Services;
 using MeetMe.Shared.Auth;
+using MeetMe.Shared.Cache;
 using MeetMe.Shared.Commands;
 using MeetMe.Shared.Database;
 using MeetMe.Shared.Dispatchers;
@@ -26,6 +27,7 @@ public static class Extensions
         services.AddQueries();
         services.AddMessaging();
         services.AddPostgres(configuration);
+        services.AddRedisCache(configuration);
         services.AddAuth(configuration);
         services.AddSingleton<IClock, Clock>();
         services.AddSingleton<IDispatcher, InMemoryDispatcher>();

@@ -15,6 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\Modules\MeetMe.Modules.Matching.Api\MeetMe.Modules.Matching.Api.csproj" />
       <ProjectReference Include="..\..\Modules\Profiles\MeetMe.Modules.Profiles.Api\MeetMe.Modules.Profiles.Api.csproj" />
       <ProjectReference Include="..\..\Modules\Users\MeetMe.Modules.Users.Api\MeetMe.Modules.Users.Api.csproj" />
     </ItemGroup>
