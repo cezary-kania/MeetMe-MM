@@ -3,4 +3,4 @@ using MeetMe.Shared.Abstractions.Commands;
 
 namespace MeetMe.Modules.Matching.Core.Commands;
 
-public record LikeOrSkipProfile(Guid UserId, Guid ProfileId, DecisionType DecisionType) : ICommand;
+public record LikeOrSkipProfile(Guid UserId, Guid ProfileId, string DecisionType) : ICommand;

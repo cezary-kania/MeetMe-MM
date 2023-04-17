@@ -4,21 +4,23 @@ using MeetMe.Modules.Matching.Core.Entities;
 using MeetMe.Modules.Matching.Core.Enums;
 using MeetMe.Modules.Matching.Core.Exceptions;
 using MeetMe.Modules.Matching.Core.Services;
-using MeetMe.Shared.Abstractions.Cache;
 using MeetMe.Shared.Abstractions.Commands;
+using MeetMe.Shared.Abstractions.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace MeetMe.Modules.Matching.Core.Commands.Handlers;
 
 internal sealed class LikeOrSkipProfileHandler : ICommandHandler<LikeOrSkipProfile>
 {
-    private readonly ICacheService _cacheService;
+    private const uint DecisionExpirationTimeInDays = 5;
+    private readonly IClock _clock;
     private readonly MatchingDbContext _dbContext;
     private readonly IDecisionResultStore _decisionResultStore;
 
-    public LikeOrSkipProfileHandler(ICacheService cacheService, MatchingDbContext dbContext,
+    public LikeOrSkipProfileHandler(IClock clock, MatchingDbContext dbContext,
         IDecisionResultStore decisionResultStore)
     {
-        _cacheService = cacheService;
+        _clock = clock;
         _dbContext = dbContext;
         _decisionResultStore = decisionResultStore;
     }
@@ -27,11 +29,11 @@ internal sealed class LikeOrSkipProfileHandler : ICommandHandler<LikeOrSkipProfi
     {
         await UpdateDecisionsAsync(command);
         var (userId, profileId, decisionType) = command;
-        if (decisionType == DecisionType.Like && await IsMatch(userId, profileId))
+        if (Enum.Parse<DecisionType>(decisionType) == DecisionType.Like && await IsMatch(userId, profileId))
         {
             var match = new Match(Guid.NewGuid(), userId, profileId, true);
-            await _dbContext.Matches.AddAsync(match);
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.Matches.AddAsync(match, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
             _decisionResultStore.Set(true);
         }
         _decisionResultStore.Set(false);
@@ -40,33 +42,28 @@ internal sealed class LikeOrSkipProfileHandler : ICommandHandler<LikeOrSkipProfi
     private async Task UpdateDecisionsAsync(LikeOrSkipProfile command)
     {
         var (userId, profileId, decisionType) = command;
-        var decisions = (await GetUserDecisionsAsync(userId)).ToList();
-        if (decisions.Any(x => x.ProfileId == profileId))
+        var decisions = await GetActiveUserDecisionsForProfileAsync(userId, profileId);
+        if (decisions.Any())
         {
             throw new CannotPerformLikeOrSkipOperation(userId, profileId);
         }
-        decisions.Add(new Decision(profileId, decisionType.ToString()));
-        var decisionsCacheKey = GetCacheKey(userId);
-        await _cacheService.CacheAsync(decisionsCacheKey, decisions, TimeSpan.FromDays(5));
+
+        var newDecision = new Decision(userId, profileId, Enum.Parse<DecisionType>(decisionType), _clock.Now);
+        await _dbContext.Decisions.AddAsync(newDecision);
+        await _dbContext.SaveChangesAsync();
     }
 
     private async Task<Boolean> IsMatch(Guid userId, Guid profileId)
     {
-        return (await GetUserDecisionsAsync(profileId))
-            .Any(x => x.ProfileId == userId && x.DecisionType == DecisionType.Like.ToString());
+        var decisions = await GetActiveUserDecisionsForProfileAsync(userId, profileId);
+        return decisions.Any() && decisions.Last().DecisionType == DecisionType.Like;
     }
 
-    private string GetCacheKey(Guid userId) => $"matches-decisions-{userId}";
-
-    private async Task<IEnumerable<Decision>> GetUserDecisionsAsync(Guid userId)
-    {
-        var key = GetCacheKey(userId);
-        var serializedDecisions = await _cacheService.GetAsync(key);
-        if (serializedDecisions is null)
-        {
-            return Enumerable.Empty<Decision>();
-        }
-        return JsonSerializer.Deserialize<IEnumerable<Decision>>(serializedDecisions) ?? Enumerable.Empty<Decision>();
-    }
-
+    private async Task<IEnumerable<Decision>> GetActiveUserDecisionsForProfileAsync(Guid userId, Guid profileId)
+        => await _dbContext.Decisions
+            .Where(x => x.UserId == userId)
+            .Where(x => x.ProfileId == profileId)
+            .Where(x => x.Time > _clock.Now.Add(TimeSpan.FromDays(DecisionExpirationTimeInDays)))
+            .OrderByDescending(x => x.Time)
+            .ToListAsync();
 }

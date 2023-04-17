@@ -1,27 +1,26 @@
-﻿using System.Text.Json;
-using MeetMe.Modules.Matching.Core.DAL;
+﻿using MeetMe.Modules.Matching.Core.DAL;
 using MeetMe.Modules.Matching.Core.DTOs;
-using MeetMe.Modules.Matching.Core.Entities;
 using MeetMe.Modules.Matching.Core.Exceptions;
 using MeetMe.Modules.Matching.Core.Services;
-using MeetMe.Shared.Abstractions.Cache;
 using MeetMe.Shared.Abstractions.Queries;
+using MeetMe.Shared.Abstractions.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace MeetMe.Modules.Matching.Core.Queries.Handlers;
 
 internal sealed class GetSuggestedProfilesHandler : IQueryHandler<GetSuggestedProfiles, IEnumerable<SuggestedProfileDto>>
 {
-    private readonly ICacheService _cacheService;
+    private const uint DecisionExpirationTimeInDays = 5;
+    private readonly IClock _clock;
     private readonly MatchingDbContext _dbContext;
     private readonly IUserMatchService _userMatchService;
 
     public GetSuggestedProfilesHandler(
-        ICacheService cacheService, 
+        IClock clock, 
         MatchingDbContext dbContext, 
         IUserMatchService userMatchService)
     {
-        _cacheService = cacheService;
+        _clock = clock;
         _dbContext = dbContext;
         _userMatchService = userMatchService;
     }
@@ -43,6 +42,7 @@ internal sealed class GetSuggestedProfilesHandler : IQueryHandler<GetSuggestedPr
             .Where(x => x.Gender == userFilter.Gender)
             .Where(x => x.Active)
             .Where(x => x.Age <= userFilter.MaxAge && x.Age >= userFilter.MinAge)
+            .Take((int) query.Size)
             .Select(x => new SuggestedProfileDto(x.UserId))
             .ToListAsync();
         return filteredProfiles;
@@ -51,25 +51,19 @@ internal sealed class GetSuggestedProfilesHandler : IQueryHandler<GetSuggestedPr
     private async Task<IEnumerable<Guid>> GetProfileIdsToSkip(Guid userId)
     {
         var profilesToSkip = new List<Guid>();
-        var profilesFromDecisions = await GetProfileIdsFromCachedDecisions(userId);
+        var profilesFromDecisions = await GetProfileIdsFromActiveDecisions(userId);
         profilesToSkip.AddRange(profilesFromDecisions);
         var profilesFromMatches = await GetProfileIdsFromMatches(userId);
         profilesToSkip.AddRange(profilesFromMatches);
         return profilesToSkip;
     }
 
-    private async Task<IEnumerable<Guid>> GetProfileIdsFromCachedDecisions(Guid userId)
-    {
-        var serializedDecisions = await _cacheService.GetAsync($"matches-decisions-{userId}");
-        if (serializedDecisions is null)
-        {
-            return Enumerable.Empty<Guid>();
-        }
-        var decisions = JsonSerializer.Deserialize<IEnumerable<Decision>>(
-            serializedDecisions);
-        var profileIds = decisions?.Select(x => x.ProfileId);
-        return profileIds ?? Enumerable.Empty<Guid>();
-    }
+    private async Task<IEnumerable<Guid>> GetProfileIdsFromActiveDecisions(Guid userId)
+        => await _dbContext.Decisions
+            .Where(x => x.UserId == userId)
+            .Where(x => x.Time > _clock.Now.Add(TimeSpan.FromDays(DecisionExpirationTimeInDays)))
+            .Select(x => x.ProfileId)
+            .ToListAsync();
     
     private async Task<IEnumerable<Guid>> GetProfileIdsFromMatches(Guid userId)
     {

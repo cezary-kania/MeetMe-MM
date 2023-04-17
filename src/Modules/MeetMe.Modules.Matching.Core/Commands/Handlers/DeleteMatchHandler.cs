@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeetMe.Modules.Matching.Core.Commands.Handlers;
 
-internal class DeleteMatchHandler : ICommandHandler<DeleteMatch>
+internal sealed class DeleteMatchHandler : ICommandHandler<DeleteMatch>
 {
     private readonly MatchingDbContext _dbContext;
 

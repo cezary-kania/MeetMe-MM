@@ -8,6 +8,7 @@ internal class MatchingDbContext : DbContext
     public DbSet<Match> Matches { get; set; }
     public DbSet<UserFilter> Filters { get; set; }
     public DbSet<Profile> Profiles { get; set; }
+    public DbSet<Decision> Decisions { get; set; }
     
     public MatchingDbContext(DbContextOptions<MatchingDbContext> options) : base(options)
     {

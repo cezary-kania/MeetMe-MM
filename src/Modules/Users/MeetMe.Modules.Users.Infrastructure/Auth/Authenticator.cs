@@ -32,7 +32,7 @@ internal sealed class Authenticator : IAuthenticator
     
     public JwtDto CreateToken(Guid userId)
     {
-        var now = _clock.CurrentDate();
+        var now = _clock.Now;
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),

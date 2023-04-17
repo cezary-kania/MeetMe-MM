@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeetMe.Modules.Profiles.Core.DAL;
 
-internal class ProfilesDbContext : DbContext
+internal sealed class ProfilesDbContext : DbContext
 {
     public DbSet<Interest> Interests { get; set; }
     public DbSet<ProfileImage> ProfileImages { get; set; }

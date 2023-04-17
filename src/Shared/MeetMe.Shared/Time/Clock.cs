@@ -4,5 +4,5 @@ namespace MeetMe.Shared.Time;
 
 public sealed class Clock : IClock
 {
-    public DateTime CurrentDate() => DateTime.UtcNow;
+    public DateTime Now => DateTime.UtcNow;
 }
