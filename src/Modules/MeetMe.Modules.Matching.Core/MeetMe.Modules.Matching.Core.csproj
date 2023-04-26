@@ -14,4 +14,8 @@
       <ProjectReference Include="..\..\Shared\MeetMe.Shared\MeetMe.Shared.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="DAL\Migrations" />
+    </ItemGroup>
+
 </Project>
