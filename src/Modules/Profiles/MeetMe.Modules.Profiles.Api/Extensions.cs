@@ -76,26 +76,27 @@ public static class Extensions
             => await profileService.GetImagesAsync(profileId)
             ).RequireAuthorization();
         
-        app.MapPost("api/profiles/images",
-        async (
-            [FromForm] List<IFormFile> images,
-            [FromServices] ICurrentUserService currentUserService,
-            [FromServices] IProfileService profileService) =>
-        {
-            if (!Guid.TryParse(currentUserService.UserId, out var profileId) || images.Count is > 5 or < 1)
-            {
-                return Results.BadRequest();
-            }
-            var processedImages = await Task.WhenAll(
-                images.Select(async x =>
-            {
-                using var memoryStream = new MemoryStream();
-                await x.CopyToAsync(memoryStream);
-                return memoryStream.ToArray();
-            }));
-            await profileService.AddImageAsync(profileId, processedImages);
-            return Results.NoContent();
-        }).RequireAuthorization();
+        // FIXME: minimal api does not support IFormFile
+        // app.MapPost("api/profiles/images",
+        // async (
+        //     [FromForm] List<IFormFile> images,
+        //     [FromServices] ICurrentUserService currentUserService,
+        //     [FromServices] IProfileService profileService) =>
+        // {
+        //     if (!Guid.TryParse(currentUserService.UserId, out var profileId) || images.Count is > 5 or < 1)
+        //     {
+        //         return Results.BadRequest();
+        //     }
+        //     var processedImages = await Task.WhenAll(
+        //         images.Select(async x =>
+        //     {
+        //         using var memoryStream = new MemoryStream();
+        //         await x.CopyToAsync(memoryStream);
+        //         return memoryStream.ToArray();
+        //     }));
+        //     await profileService.AddImageAsync(profileId, processedImages);
+        //     return Results.NoContent();
+        // }).RequireAuthorization();
 
         app.MapDelete("api/profiles/images/{imageId:guid}",
         async (
