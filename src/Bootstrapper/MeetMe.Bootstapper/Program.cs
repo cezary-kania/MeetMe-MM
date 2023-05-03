@@ -23,10 +23,7 @@ app.ExposeUsersApi();
 app.ExposeProfilesApi();
 app.ExposeMatchingApi();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.Run();

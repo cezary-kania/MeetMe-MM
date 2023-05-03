@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  api:
+    image: ${DOCKER_REGISTRY}/meetme-mm
+    container_name: meetme.api
+    build:
+      context: .
+      dockerfile: src/Bootstrapper/MeetMe.Bootstapper/Dockerfile
+    depends_on:
+      - db
+    restart: on-failure
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${PASSWORD}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - auth__issuer=MeetMe-issuer
+      - auth__audience=MeetMe-audience
+      - auth__signingKey=${AUTH_SIGNING_KEY}
+      - Postgres__ConnectionString=Host=postgres-db;Database=MeetMe-MM;Username=postgres;Password=${PASSWORD}
+    volumes:
+      - ~/.aspnet/https:/https:ro
+    
+  db:
+    image: postgres
+    container_name: postgres-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${PASSWORD}
+      - POSTGRES_DB=MeetMe-MM
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
